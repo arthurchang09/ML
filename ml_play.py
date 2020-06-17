@@ -1,178 +1,286 @@
-"""
-The template of the script for the machine learning process in game pingpong
-"""
+import random
+class MLPlay:
+    def __init__(self, player):
+        self.player = player
+        if self.player == "player1":
+            self.player_no = 0
+        elif self.player == "player2":
+            self.player_no = 1
+        elif self.player == "player3":
+            self.player_no = 2
+        elif self.player == "player4":
+            self.player_no = 3
+        self.car_vel = 0                            # speed initial
+        self.car_pos = (0,0)                        # pos initial
+        self.car_lane = self.car_pos[0] // 70       # lanes 0 ~ 8
+        self.next=self.car_lane
+        self.lanes = [35, 105, 175, 245, 315, 385, 455, 525, 595]  # lanes center
+        pass
 
-# Import the necessary modules and classes
-from os import path
-import pickle
+    def update(self, scene_info):
+        """
+        Generate the command according to the received scene information
+        """
+        self.car_pos = scene_info[self.player]
+        for car in scene_info["cars_info"]:
+            if car["id"]==self.player_no:
+                self.car_vel = car["velocity"]
 
-import numpy as np
-from mlgame.communication import ml as comm
-
-def ml_loop(side: str):
-    """
-    The main loop for the machine learning process
-
-    The `side` parameter can be used for switch the code for either of both sides,
-    so you can write the code for both sides in the same script. Such as:
-    ```python
-    if side == "1P":
-        ml_loop_for_1P()
-    else:
-        ml_loop_for_2P()
-    ```
-
-    @param side The side which this script is executed for. Either "1P" or "2P".
-    """
-
-    # === Here is the execution order of the loop === #
-    # 1. Put the initialization code here
-    ball_served = False
-    """
-    filename=path.join(path.dirname(__file__), 'save', 'SVRp1.pickle')
-    filename1=path.join(path.dirname(__file__), 'save', 'SVRp2.pickle')
-    with open(filename, 'rb') as file:
-        p1 = pickle.load(file)
-    with open(filename1, 'rb') as file:
-        p2 = pickle.load(file)
-    a=8
-    """
-    filename=path.join(path.dirname(__file__), 'save', 'SVM_C.pickle')
-    with open(filename, 'rb') as file:
-        p1 = pickle.load(file)
-    #filename1=path.join(path.dirname(__file__), 'save', 'SVM_C_2P.pickle')
-    #with open(filename1, 'rb') as file:
-    #    p2 = pickle.load(file)
-    pre_blocker=(90,240)
-    # 2. Inform the game process that ml process is ready
-    comm.ml_ready()
-
-    # 3. Start an endless loop
-    while True:
-        # 3.1. Receive the scene information sent from the game process
-        scene_info = comm.recv_from_game()
-
-        # 3.2. If either of two sides wins the game, do the updating or
-        #      resetting stuff and inform the game process when the ml process
-        #      is ready.
-        if scene_info["status"] != "GAME_ALIVE":
-            # Do some updating or resetting stuff
-            ball_served = False
-            pre_blocker=scene_info["blocker"]
-            # 3.2.1 Inform the game process that
-            #       the ml process is ready for the next round
-            comm.ml_ready()
-            continue
-
-        # 3.3 Put the code here to handle the scene information
-        feature=[]
-        feature2=[]
-        Ball=scene_info["ball"]
-        Ball_speed=scene_info["ball_speed"]
-        Blocker=scene_info["blocker"]
-        Blocker_speed=Blocker[0]-pre_blocker[0]
-        pre_blocker=scene_info["blocker"]
-        p1x=scene_info["platform_1P"][0]
-        p1y=scene_info["platform_1P"][1]
-        p2x=scene_info["platform_2P"][0]
-        p2y=scene_info["platform_2P"][1]
-        feature.append(Ball[0])
-        feature.append(Ball[1])
-        feature.append(Ball_speed[0])
-        feature.append(Ball_speed[1])
-        feature.append(Blocker[0])
-        feature.append(Blocker[1])
-        feature.append(Blocker_speed)
-        feature.append(p1x)
-        feature.append(p1y)
-        
-        feature2.append(Ball[0])
-        feature2.append(Ball[1])
-        feature2.append(Ball_speed[0])
-        feature2.append(Ball_speed[1])
-        feature2.append(Blocker[0])
-        feature2.append(Blocker[1])
-        feature2.append(Blocker_speed)
-        feature2.append(p2x)
-        feature2.append(p2y)
-        
-        feature=np.array(feature)
-        feature2=np.array(feature2)
-        
-        feature=feature.reshape(-1,9)
-        feature2=feature2.reshape(-1,9)
-        # 3.4 Send the instruction for this frame to the game process
-        if not ball_served:
-            #comm.send_to_game({"frame": scene_info["frame"], "command": "SERVE_TO_RIGHT"})
-            #ball_served = True
-            """
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            """
-            comm.send_to_game({"frame": scene_info["frame"], "command": "SERVE_TO_RIGHT"})
-            ball_served = True
-            """
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            
-            
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            """
-            
-            
-        else:
-            """
-            if a==1:
-                comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-                a=a+1
-            elif a==2:
-                comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_RIGHT"})
-                a=a+1
+        if scene_info["status"] != "ALIVE":
+            return "RESET"
+        warning=0       #0 no forward 1 forward car 
+        forward=()
+        near = set()
+        speed=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        before=0
+        if self.car_pos!=(): 
+            self.car_lane = self.car_pos[0] // 70
+            #print(self.car_lane)
+            before=self.next
+            if self.car_lane==0:
+                near.add(2)
+                near.add(7)
+                near.add(12)
+                near.add(1)
+                near.add(6)
+                near.add(11)
+                speed[12]=20
+                speed[11]=20
+            elif self.car_lane==1:
+                near.add(1)
+                near.add(6)
+                near.add(11)
+                speed[11]=20
+            elif self.car_lane==8:
+                near.add(4)
+                near.add(9)
+                near.add(14)
+                near.add(5)
+                near.add(10)
+                near.add(15)
+                speed[14]=20
+                speed[15]=20
+            elif self.car_lane==7:
+                near.add(5)
+                near.add(10)
+                near.add(15)
+                speed[15]=20
+            for car in scene_info["cars_info"]:
+                    if car["id"] != self.player_no:
+                        x = self.car_pos[0] - car["pos"][0]
+                        y = self.car_pos[1] - car["pos"][1]
+                        car_lane=car["pos"][0]//70
+                        if car_lane==self.car_lane:
+                            if y>0 and y<300:
+                                near.add(3)
+                                speed[3]=car["velocity"]
+                                if y<250:
+                                    near.add(8)
+                                    speed[8]=car["velocity"]
+                                    if y<100:
+                                        return ["BRAKE"]
+                            elif y<0 and y>-200:
+                                near.add(13)
+                                speed[13]=car["velocity"]
+                        if y<80 and y>-80:
+                            if car_lane==self.car_lane+2:
+                                near.add(10)
+                                speed[10]=car["velocity"]
+                            elif car_lane==self.car_lane+1:
+                                near.add(9)
+                                speed[9]=car["velocity"]
+                            elif car_lane==self.car_lane-1:
+                                near.add(7)
+                                speed[7]=car["velocity"]
+                            elif car_lane==self.car_lane-2:
+                                near.add(6)
+                                speed[6]=car["velocity"]
+                        if y > 80 and y < 250:
+                            if car_lane==self.car_lane+2:
+                                near.add(5)
+                                speed[5]=car["velocity"]
+                            elif car_lane==self.car_lane+1:
+                                near.add(4)
+                                speed[4]=car["velocity"]
+                            elif car_lane==self.car_lane-1:
+                                near.add(2)
+                                speed[2]=car["velocity"]
+                            elif car_lane==self.car_lane-2:
+                                near.add(1)
+                                speed[1]=car["velocity"]
+                        if y < -80 and y > -200:
+                            if car_lane==self.car_lane+2:
+                                near.add(15)
+                                speed[15]=car["velocity"]
+                            elif car_lane==self.car_lane+1:
+                                near.add(14)
+                                speed[14]=car["velocity"]
+                            elif car_lane==self.car_lane-1:
+                                near.add(12)
+                                speed[12]=car["velocity"]
+                            elif car_lane==self.car_lane-2:
+                                near.add(11)
+                                speed[11]=car["velocity"]
+            #print(near,"   ",speed)
+            brake=0
+            if len(near)==0:
+                self.next=self.car_lane
             else:
-                a=a+1
-                if a>=25:
-                    a=1
-            """
-            """
-            x1=p1.predict(feature)
-            x2=p2.predict(feature)
-            if side=="1P":
-                if x1>scene_info["plateform_1P"][0]:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_RIGHT"})
-                elif x1<scene_info["platform"][0]:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            else:
-                if x2>scene_info["plateform_1P"][0]:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_RIGHT"})
-                elif x2<scene_info["platform"][0]:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-            """
-            y1=p1.predict(feature)
-            #y2=p2.predict(feature2)
-            if side=="1P":
-                if y1==0:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "NONE"})
-                elif y1==1:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
+                if 3 not in near:
+                    self.next=self.car_lane
                 else:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_RIGHT"})
-            """
-            else:
-                if y2==0:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "NONE"})
-                elif y2==1:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_LEFT"})
-                else:
-                    comm.send_to_game({"frame": scene_info["frame"], "command": "MOVE_RIGHT"})
-            """
+                    if 8 in near:
+                        if (2 not in near) and (7 not in near) and speed[12]<=self.car_vel:  #left 1 no car
+                            if  (4 not in near) and (9 not in near) and speed[14]<self.car_vel:  #right 1 no car
+                                if (1 not in near) and (6 not in near) :    #left 2 no car
+                                    if (5 not in near) and (10 not in near): #right 2 no car 
+                                        """
+                                        if random.randint(0,99)%2==1:
+                                            self.next=self.car_lane+1
+                                        else:
+                                            self.next=self.car_lane-1
+                                        """
+                                        self.next=self.car_lane-1
+                                    else: #right 2 has car
+                                        self.next=self.car_lane-1
+                                else:#left 2 has car
+                                    if (5 not in near) and (10 not in near): #right 2 no car 
+                                        self.next=self.car_lane+1
+                                    else:   #right 2 has car
+                                        """
+                                        if random.randint(0,99)%2==1:
+                                            self.next=self.car_lane+1
+                                        else:
+                                            self.next=self.car_lane-1
+                                        """
+                                        self.next=self.car_lane-1
+                            else:   #right 1 has car 
+                                self.next=self.car_lane-1
+                        else: #left 1 has car
+                            if  (4 not in near) and (9 not in near) and speed[14]<=self.car_vel:  #right 1 no car
+                                self.next=self.car_lane+1
+                            else:   # right1 has car
+                                print("hi")
+                                if (7 not in near) and speed[12]<=self.car_vel: #left middle no car and back is slow
+                                    if (9 not in near) and speed[14]<=self.car_vel: #right  middle no car and back is slow
+                                        #if random.randint(0,99)%2==1:
+                                        #    self.next=self.car_lane+1
+                                        #else:
+                                        #    self.next=self.car_lane-1
+                                        self.next=self.car_lane+1
+                                    else: #right middle has car or back is fast
+                                        self.next=self.car_lane-1
+                                else: #left middle has car or back is fast
+                                    if (9 not in near) and speed[14]<=self.car_vel: #right  middle no car and back is slow
+                                        self.next=self.car_lane+1
+                                    else:   #right middle has car or back is fast
+                                        if (7 not in near) and (9 not in near):
+                                            """
+                                            if random.randint(0,99)%2==1:
+                                                self.next=self.car_lane+1
+                                            else:
+                                                self.next=self.car_lane-1
+                                            """
+                                            self.next=self.car_lane-1
+                                        elif 7 not in near:
+                                            self.next=self.car_lane-1
+                                        elif 9 not in near:
+                                            self.next=self.car_lane+1
+                                        else:
+                                            brake=1
+                    else:
+                         if (2 not in near) and (7 not in near) and speed[12]<=self.car_vel:  #left 1 no car
+                            if  (4 not in near) and (9 not in near) and speed[14]<self.car_vel:  #right 1 no car
+                                if (1 not in near) and (6 not in near) :    #left 2 no car
+                                    if (5 not in near) and (10 not in near): #right 2 no car 
+                                        """
+                                        if random.randint(0,99)%2==1:
+                                            self.next=self.car_lane+1
+                                        else:
+                                            self.next=self.car_lane-1
+                                        """
+                                        self.next=self.car_lane-1
+                                    else: #right 2 has car
+                                        self.next=self.car_lane-1
+                                else:#left 2 has car
+                                    if (5 not in near) and (10 not in near): #right 2 no car 
+                                        self.next=self.car_lane+1
+                                    else:   #right 2 has car
+                                        """
+                                        if random.randint(0,99)%2==1:
+                                            self.next=self.car_lane+1
+                                        else:
+                                            self.next=self.car_lane-1
+                                        """
+                                        self.next=self.car_lane-1
+                            else:   #right 1 has car 
+                                self.next=self.car_lane-1
+                         else: #left 1 has car
+                            if  (4 not in near) and (9 not in near) and speed[14]<=self.car_vel:  #right 1 no car
+                                self.next=self.car_lane+1
+                            else:   # right1 has car
+                                print("hi")
+                                if (7 not in near) and speed[12]<=self.car_vel: #left middle no car and back is slow
+                                    if (9 not in near) and speed[14]<=self.car_vel: #right  middle no car and back is slow
+                                        #if random.randint(0,99)%2==1:
+                                        #    self.next=self.car_lane+1
+                                        #else:
+                                        #    self.next=self.car_lane-1
+                                        self.next=self.car_lane+1
+                                    else: #right middle has car or back is fast
+                                        self.next=self.car_lane-1
+                                else: #left middle has car or back is fast
+                                    if (9 not in near) and speed[14]<=self.car_vel: #right  middle no car and back is slow
+                                        self.next=self.car_lane+1
+                                    else:   #right middle has car or back is fast
+                                        if (7 not in near) and (9 not in near):
+                                            """
+                                            if random.randint(0,99)%2==1:
+                                                self.next=self.car_lane+1
+                                            else:
+                                                self.next=self.car_lane-1
+                                            """
+                                            self.next=self.car_lane-1
+                                        elif 7 not in near:
+                                            self.next=self.car_lane-1
+                                        elif 9 not in near:
+                                            self.next=self.car_lane+1
+                                        else:
+                                            brake=1
+                        
+            if self.next<0:
+                self.next=0
+            print(near,"   ",self.next)
+            if (self.car_lane!= before) or self.car_pos[0]!=self.lanes[before]:
+                print("not yet")
+                if self.next==self.car_lane:
+                    if self.car_pos[0] > self.lanes[self.car_lane]:
+                        return ["SPEED", "MOVE_LEFT"]
+                    elif self.car_pos[0 ] < self.lanes[self.car_lane]:
+                        return ["SPEED", "MOVE_RIGHT"]
+                    else :return ["SPEED"]
+                elif self.next==self.car_lane+1:
+                    return ["SPEED","MOVE_RIGHT"]
+                elif self.next==self.car_lane-1:
+                    return ["SPEED","MOVE_LEFT"]
+            if brake==1:
+                return ["BRAKE"]
+            elif self.next==self.car_lane:
+                if self.car_pos[0] > self.lanes[self.car_lane]:
+                        return ["SPEED", "MOVE_LEFT"]
+                elif self.car_pos[0 ] < self.lanes[self.car_lane]:
+                        return ["SPEED", "MOVE_RIGHT"]
+                else :return ["SPEED"]
+            elif self.next==self.car_lane+1:
+                return ["SPEED","MOVE_RIGHT"]
+            elif self.next==self.car_lane-1:
+                return ["SPEED","MOVE_LEFT"]
+                                            
+        #return ["MOVE_LEFT", "MOVE_RIGHT", "SPEED", "BRAKE"]
+
+
+    def reset(self):
+        """
+        Reset the status
+        """
+        pass
