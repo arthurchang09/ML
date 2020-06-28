@@ -14,7 +14,7 @@ class MLPlay:
         self.coin_num = 0
         self.computer_cars = []
         self.coins_pos = []
-                            # speed initial
+
         self.car_pos = (0,0)                        # pos initial
         self.car_lane = self.car_pos[0] // 70       # lanes 0 ~ 8
         self.next=self.car_lane
@@ -40,15 +40,21 @@ class MLPlay:
         coin_num=[0,0,0,0,0,0,0,0,0,0]
         before=0
         if self.car_pos!=(): 
+            lane_before=self.car_lane
             self.car_lane = self.car_pos[0] // 70
             #print(self.car_lane)
             before=self.next
+            if ((self.car_pos[0]-18))!=(before-35):
+                if before==lane_before+1:
+                    return ["SPEED","MOVE_RIGHT"]
+                elif before==lane_before-1:
+                    return ["SPEED","MOVE_LEFT"]
             for coin in scene_info["coins"]:
                 if coin!=():
                     cx=coin[0]
                     cy=coin[1]
                     coin_lane=cx//70
-                    if cy<self.car_pos[1]:
+                    if cy<self.car_pos[1]-40:
                         coin_num[coin_lane]=coin_num[coin_lane]+1
             left_coin=0
             right_coin=0
@@ -96,11 +102,11 @@ class MLPlay:
                                 if y<250:
                                     near.add(8)
                                     speed[8]=car["velocity"]
-                                    if (y<190) and (self.car_vel>=11) and (car["velocity"]<self.car_vel):
+                                    if (y<180) and (self.car_vel>=11) and (car["velocity"]<self.car_vel):
                                         if self.player_no==0:
                                             print("warning")
                                         return ["BRAKE"]
-                                    elif y<140 and (self.car_vel>=8) and (car["velocity"]<self.car_vel):
+                                    elif y<120 and (self.car_vel>=8) and (car["velocity"]<self.car_vel):
                                         if self.player_no==0:
                                             print("warning1")
                                         return ["BRAKE"]
@@ -170,14 +176,14 @@ class MLPlay:
                     
                     if coin_num[self.car_lane]>0:
                         self.next=self.car_lane
-                    elif (coin_num[self.car_lane-1]>coin_num[self.car_lane+1]) and (coin_num[self.car_lane-1]>0):
+                    elif (coin_num[self.car_lane-1]>coin_num[self.car_lane+1]) and (coin_num[self.car_lane-1]>0) and (7 not in near):
                         self.next=self.car_lane-1
-                    elif (coin_num[self.car_lane-1]<coin_num[self.car_lane+1]) and (coin_num[self.car_lane+1]>0):
+                    elif (coin_num[self.car_lane-1]<coin_num[self.car_lane+1]) and (coin_num[self.car_lane+1]>0) and (9 not in near):
                         self.next=self.car_lane+1
                     elif coin_num[self.car_lane-1]==coin_num[self.car_lane+1]:
-                        if left_coin>right_coin:
+                        if (left_coin>right_coin) and (7 not in near):
                             self.next=self.car_lane-1
-                        elif left_coin<right_coin:
+                        elif (left_coin<right_coin) and (9 not in near):
                             self.next=self.car_lane+1
                         else:
                             self.next=self.car_lane
@@ -426,7 +432,7 @@ class MLPlay:
             if self.next>8:
                 self.next=7
             if self.player_no==0:    
-                print(near,"\t",self.next,"\t",coin_num)
+                print(near,"\t",self.next,"\t",self.car_lane," ",coin_num)
             
             if (self.next==self.car_lane+1) and (9 in near):
                 return ["SPEED","MOVE_LEFT"]
@@ -451,7 +457,7 @@ class MLPlay:
             elif self.next==self.car_lane:
                 if self.car_pos[0] > self.lanes[self.car_lane]:
                         return ["SPEED", "MOVE_LEFT"]
-                elif self.car_pos[0 ] < self.lanes[self.car_lane]:
+                elif self.car_pos[0] < self.lanes[self.car_lane]:
                         return ["SPEED", "MOVE_RIGHT"]
                 else :return ["SPEED"]
             elif self.next==self.car_lane+1:
