@@ -426,17 +426,12 @@ class MLPlay:
                 self.next=1
             if self.next>8:
                 self.next=7
-            if self.player_no==0:    
-                print(near,"\t",self.next,"\t",self.car_lane," ",coin_num)
+            
             if ((self.car_pos[0]-18))!=self.lanes[before]-34:
                 if before==lane_before+1 and (9 not in near):
                     return ["SPEED","MOVE_RIGHT"]
                 elif before==lane_before-1 and (7 not in near):
                     return ["SPEED","MOVE_LEFT"]
-            if (self.next==self.car_lane+1) and (9 not in near):
-                return ["SPEED","MOVE_LEFT"]
-            if (self.next==self.car_lane-1) and (7 not in near):
-                return ["SPEED","MOVE_RIGHT"]
             """
             if (self.car_lane!= before) or self.car_pos[0]!=self.lanes[before]:
                 #print("not yet")
