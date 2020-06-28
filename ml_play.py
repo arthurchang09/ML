@@ -432,7 +432,7 @@ class MLPlay:
                 return ["SPEED","MOVE_LEFT"]
             if (self.next==self.car_lane-1) and (7 in near):
                 return ["SPEED","MOVE_RIGHT"]
-            
+            """
             if (self.car_lane!= before) or self.car_pos[0]!=self.lanes[before]:
                 #print("not yet")
                 if before==self.car_lane:
@@ -445,6 +445,7 @@ class MLPlay:
                     return ["SPEED","MOVE_RIGHT"]
                 elif before==self.car_lane-1:
                     return ["SPEED","MOVE_LEFT"]
+            """
             if brake==1:
                 return ["BRAKE"]
             elif self.next==self.car_lane:
